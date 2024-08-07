@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geofence</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+
+        #locationStatus {
+            margin-top: 10px;
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Geofence</h1>
+    <div id="map"></div>
+    <div id="locationStatus"></div>
+    <button id="getLocationBtn">Get Location</button>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize map
+            var map = L.map('map').setView([12.996507, 80.241985], 13);
+
+            // Add Tile layer (you can use any map provider)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            // Define geofence polygon coordinates
+            var geofenceCoordinates = [
+                [13.009022, 80.236175],
+                [13.008820, 80.237943],
+                [13.007708, 80.237774],
+                [13.007905, 80.236014],
+                [13.009022, 80.236175] // Repeat first point to close the polygon
+            ];
+
+            // Create geofence polygon
+            var geofencePolygon = L.polygon(geofenceCoordinates, {color: 'blue'}).addTo(map);
+
+            // Define a marker for user's location
+            var userLocationMarker = L.marker([0, 0]);
+
+            // Function to show user's location
+            function showPosition(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Update user's location marker position
+                userLocationMarker.setLatLng([latitude, longitude]).addTo(map);
+
+                // Check if the current location is inside the geofence
+                var currentLocation = L.latLng(latitude, longitude);
+                var isInside = geofencePolygon.getBounds().contains(currentLocation);
+
+                var locationStatus = isInside ? "Inside geofence" : "Outside geofence";
+                
+                // Split the output message into lines
+                var outputLines = [
+                    "Latitude: " + latitude,
+                    "Longitude: " + longitude,
+                    "Status: " + locationStatus
+                ];
+
+                // Create a container for the output messages
+                var outputContainer = document.createElement("div");
+                outputContainer.style.border = "1px solid black";
+                outputContainer.style.padding = "10px";
+
+                // Append each line as a separate div
+                outputLines.forEach(function(line) {
+                    var lineDiv = document.createElement("div");
+                    lineDiv.textContent = line;
+                    outputContainer.appendChild(lineDiv);
+                });
+
+                // Append the container to the locationStatus element
+                var locationStatusElement = document.getElementById("locationStatus");
+                locationStatusElement.innerHTML = ''; // Clear existing content
+                locationStatusElement.appendChild(outputContainer);
+            }
+
+            // Function to handle errors
+            function showError(error) {
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert("User denied the request for Geolocation.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert("Location information is unavailable.");
+                        break;
+                    case error.TIMEOUT:
+                        alert("The request to get user location timed out.");
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        alert("An unknown error occurred.");
+                        break;
+                }
+            }
+
+            // Add event listener to get user's location
+            document.getElementById("getLocationBtn").addEventListener("click", function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    alert("Geolocation is not supported by this browser.");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
